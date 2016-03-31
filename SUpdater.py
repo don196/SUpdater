@@ -1,5 +1,3 @@
-__author__ = 'DoN'
-
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import urllib.request as ur
@@ -29,8 +27,8 @@ def get_series_list():
 def check_new_series(series_list):
     new_series = []
     for series in series_list:
-        if not(series[series_url]==''):
-            req = ur.Request(series[series_url], headers={'User-Agent' : "Magic Browser"})
+        if not(series[series_url] == ''):
+            req = ur.Request(series[series_url], headers={'User-Agent': "Magic Browser"})
             response = ur.urlopen(req)
             html = response
             soup = BeautifulSoup(html, 'html.parser')
