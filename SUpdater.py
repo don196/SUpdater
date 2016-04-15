@@ -34,6 +34,8 @@ def check_new_series(series_list):
                 last_series = filiza_update(series[series_url])
             elif series[series_url].find('vo-production') != -1:
                 last_series = vo_production_update(series[series_url])
+            elif series[series_url].find('anidub') != -1:
+                last_series = anidub_update(series[series_url])
             else:
                 last_series = [1, 1]
             last_known_series = series[series_last].split(',')
@@ -93,6 +95,19 @@ def vo_production_update(url):
     m = re.findall("(?<=Сезон )\d+ Серия \d+", str(soup))
     m = m[len(m) - 1].split('Серия')
     last_series = []
+    for temp in m:
+        last_series.append(re.search('[1-9]+\d*', temp).group(0))
+    return last_series
+
+
+def anidub_update(url):
+    req = ur.Request(url, headers={'User-Agent': "Magic Browser"})
+    response = ur.urlopen(req)
+    html = response
+    soup = BeautifulSoup(html, 'html.parser')
+    m = re.search("\d+ из \d+", str(soup))
+    m = m.group(0).split(" из ")[:1]
+    last_series = ['1']
     for temp in m:
         last_series.append(re.search('[1-9]+\d*', temp).group(0))
     return last_series
