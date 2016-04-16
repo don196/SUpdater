@@ -9,6 +9,7 @@ series_name = 0
 series_watched = 1
 series_last = 2
 series_url = 3
+series_state = 4
 
 scope = ["https://spreadsheets.google.com/feeds"]
 
@@ -35,7 +36,14 @@ def check_new_series(series_list):
             elif series[series_url].find('vo-production') != -1:
                 last_series = vo_production_update(series[series_url])
             elif series[series_url].find('anidub') != -1:
-                last_series = anidub_update(series[series_url])
+                if series[series_state] != 'сезон просмотрен':
+                    last_series = anidub_update(series[series_url])
+                    if(last_series[1] == last_series[2]) and (last_series[1] == series[series_watched].split(',')[1]):
+                        series[series_state] = 'сезон просмотрен'
+                        update_series_state(series)
+                    last_series = last_series[:-1]
+                else:
+                    last_series = series[series_watched].split(',')
             else:
                 last_series = [1, 1]
             last_known_series = series[series_last].split(',')
@@ -47,6 +55,11 @@ def check_new_series(series_list):
                 series[series_last] = last_series[0] + ',' + last_series[1]
                 new_series.append(series)
     return new_series
+
+
+def update_series_state(series):
+    row = wks.find(series[series_name]).row
+    wks.update_cell(row, series_state + 1, series[series_state])
 
 
 def update_series_list(new_series):
@@ -106,7 +119,7 @@ def anidub_update(url):
     html = response
     soup = BeautifulSoup(html, 'html.parser')
     m = re.search("\d+ из \d+", str(soup))
-    m = m.group(0).split(" из ")[:1]
+    m = m.group(0).split(" из ")
     last_series = ['1']
     for temp in m:
         last_series.append(re.search('[1-9]+\d*', temp).group(0))
