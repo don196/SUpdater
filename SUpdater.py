@@ -43,16 +43,17 @@ def check_new_series(series_list):
                         update_series_state(series)
                     last_series = last_series[:-1]
                 else:
-                    last_series = series[series_watched].split(',')
+                    last_series = series[series_watched].split('\\')
             else:
                 last_series = [1, 1]
-            last_known_series = series[series_last].split(',')
+            last_known_series = series[series_last].split('\\')
             if not (last_series[0] > last_known_series[0]):
+                print(last_series, last_known_series)
                 if last_series[0] == last_known_series[0] and last_series[1] > last_known_series[1]:
-                    series[series_last] = last_series[0] + ',' + last_series[1]
+                    series[series_last] = last_series[0] + '\\' + last_series[1]
                     new_series.append(series)
             else:
-                series[series_last] = last_series[0] + ',' + last_series[1]
+                series[series_last] = last_series[0] + '\\' + last_series[1]
                 new_series.append(series)
     return new_series
 
@@ -70,20 +71,29 @@ def update_series_list(new_series):
 
 def lostfilm_update(url):
     req = ur.Request(url, headers={'User-Agent': "Magic Browser"})
-    response = ur.urlopen(req)
+    try:
+        response = ur.urlopen(req)
+    except ur.HTTPError:
+        return ['0','0']
     html = response
     soup = BeautifulSoup(html, 'html.parser')
     m = re.search("(?<=ShowAllReleases)\(\S*\)", str(soup))
     m = m.group(0).split(',')[1:]
     last_series = []
     for temp in m:
-        last_series.append(re.search('[1-9]+\d*', temp).group(0))
+        res = re.search('\d+', temp).group(0)
+        if res[0] == 0:
+            res = res[1:]
+        last_series.append(res)
     return last_series
 
 
 def filiza_update(url):
     req = ur.Request(url, headers={'User-Agent': "Magic Browser"})
-    response = ur.urlopen(req)
+    try:
+        response = ur.urlopen(req)
+    except ur.HTTPError:
+        return ['0', '0']
     html = response
     soup = BeautifulSoup(html, 'html.parser')
     serial = re.search('/serial-\S+[^/]+', url).group(0)
@@ -97,7 +107,10 @@ def filiza_update(url):
 
 def vo_production_update(url):
     req = ur.Request(url, headers={'User-Agent': "Magic Browser"})
-    response = ur.urlopen(req)
+    try:
+        response = ur.urlopen(req)
+    except ur.HTTPError:
+        return ['0', '0']
     html = response
     soup = BeautifulSoup(html, 'html.parser')
     season_number = re.search('/Sezon\d+', str(soup)).group(0)
@@ -115,7 +128,10 @@ def vo_production_update(url):
 
 def anidub_update(url):
     req = ur.Request(url, headers={'User-Agent': "Magic Browser"})
-    response = ur.urlopen(req)
+    try:
+        response = ur.urlopen(req)
+    except ur.HTTPError:
+        return ['0', '0']
     html = response
     soup = BeautifulSoup(html, 'html.parser')
     m = re.search("\d+ из \d+", str(soup))
