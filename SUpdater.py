@@ -47,9 +47,8 @@ def check_new_series(series_list):
             else:
                 last_series = [1, 1]
             last_known_series = series[series_last].split('\\')
-            if not (last_series[0] > last_known_series[0]):
-                print(last_series, last_known_series)
-                if last_series[0] == last_known_series[0] and last_series[1] > last_known_series[1]:
+            if not (int(last_series[0]) > int(last_known_series[0])):
+                if int(last_series[0]) == int(last_known_series[0]) and int(last_series[1]) > int(last_known_series[1]):
                     series[series_last] = last_series[0] + '\\' + last_series[1]
                     new_series.append(series)
             else:
@@ -65,6 +64,7 @@ def update_series_state(series):
 
 def update_series_list(new_series):
     for series in new_series:
+        print(new_series)
         row = wks.find(series[series_name]).row
         wks.update_cell(row, series_last + 1, series[series_last])
 
