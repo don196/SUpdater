@@ -58,7 +58,6 @@ def check_new_series(series_list):
                 last_known_series = [0, 0]
             else:
                 last_known_series = series[series_last].split('\\')
-            print(last_series, last_known_series)
             if not (int(last_series[0]) > int(last_known_series[0])):
                 if int(last_series[0]) == int(last_known_series[0]) and int(last_series[1]) > int(last_known_series[1]):
                     series[series_last] = last_series[0] + '\\' + last_series[1]
