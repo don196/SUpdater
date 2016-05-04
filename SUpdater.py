@@ -11,6 +11,14 @@ series_last = 2
 series_url = 3
 series_state = 4
 
+proxy = ur.ProxyHandler(
+    {
+        'https': 'https://158.69.237.1:3128',
+        'http': 'http://107.151.152.218:80'
+    }
+)
+opener = ur.build_opener(proxy)
+
 scope = ["https://spreadsheets.google.com/feeds"]
 
 credential = ServiceAccountCredentials.from_json_keyfile_name('SeriesUpdater-4c3e977fa468.json', scope)
@@ -38,15 +46,19 @@ def check_new_series(series_list):
             elif series[series_url].find('anidub') != -1:
                 if series[series_state] != 'сезон просмотрен':
                     last_series = anidub_update(series[series_url])
-                    if(last_series[1] == last_series[2]) and (last_series[1] == series[series_watched].split(',')[1]):
+                    if(last_series[1] == last_series[2]) and (last_series[1] == series[series_watched].split('\\')[1]):
                         series[series_state] = 'сезон просмотрен'
                         update_series_state(series)
                     last_series = last_series[:-1]
                 else:
                     last_series = series[series_watched].split('\\')
             else:
-                last_series = [1, 1]
-            last_known_series = series[series_last].split('\\')
+                last_series = [0, 0]
+            if series[series_last] == '':
+                last_known_series = [0, 0]
+            else:
+                last_known_series = series[series_last].split('\\')
+            print(last_series, last_known_series)
             if not (int(last_series[0]) > int(last_known_series[0])):
                 if int(last_series[0]) == int(last_known_series[0]) and int(last_series[1]) > int(last_known_series[1]):
                     series[series_last] = last_series[0] + '\\' + last_series[1]
@@ -64,7 +76,7 @@ def update_series_state(series):
 
 def update_series_list(new_series):
     for series in new_series:
-        print(new_series)
+        print(series)
         row = wks.find(series[series_name]).row
         wks.update_cell(row, series_last + 1, series[series_last])
 
@@ -72,8 +84,11 @@ def update_series_list(new_series):
 def get_soup(url):
     req = ur.Request(url, headers={'User-Agent': "Magic Browser"})
     try:
-        response = ur.urlopen(req)
-    except ur.HTTPError:
+        if url.find('lostfilm') != -1:
+            response = opener.open(req)
+        else:
+            response = ur.urlopen(req)
+    except (ur.HTTPError, ur.URLError):
         return None
     html = response
     soup = BeautifulSoup(html, 'html.parser')
@@ -127,7 +142,7 @@ def vo_production_update(url):
 def anidub_update(url):
     soup = get_soup(url)
     if not soup:
-        return ['0', '0']
+        return ['0', '0', '0']
     m = re.search("\d+ из \d+", str(soup))
     m = m.group(0).split(" из ")
     last_series = ['1']
