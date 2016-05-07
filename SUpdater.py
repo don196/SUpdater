@@ -3,6 +3,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import urllib.request as ur
 from bs4 import BeautifulSoup
 import re
+from multiprocessing.dummy import Pool
 
 
 series_name = 0
@@ -10,6 +11,9 @@ series_watched = 1
 series_last = 2
 series_url = 3
 series_state = 4
+number_of_pool = 9
+
+pool = Pool(number_of_pool)
 
 proxy = ur.ProxyHandler(
     {
@@ -33,38 +37,49 @@ def get_series_list():
     return series_list
 
 
-def check_new_series(series_list):
-    new_series = []
-    for series in series_list:
-        if not(series[series_url] == ''):
-            if series[series_url].find('lostfilm') != -1:
-                last_series = lostfilm_update(series[series_url])
-            elif series[series_url].find('filiza') != -1:
-                last_series = filiza_update(series[series_url])
-            elif series[series_url].find('vo-production') != -1:
-                last_series = vo_production_update(series[series_url])
-            elif series[series_url].find('anidub') != -1:
-                if series[series_state] != 'сезон просмотрен':
-                    last_series = anidub_update(series[series_url])
-                    if(last_series[1] == last_series[2]) and (last_series[1] == series[series_watched].split('\\')[1]):
-                        series[series_state] = 'сезон просмотрен'
-                        update_series_state(series)
-                    last_series = last_series[:-1]
-                else:
-                    last_series = series[series_watched].split('\\')
+def check_new_series(series):
+    new_series = None
+    if not(series[series_url] == ''):
+        if series[series_url].find('lostfilm') != -1:
+            last_series = lostfilm_update(series[series_url])
+        elif series[series_url].find('filiza') != -1:
+            last_series = filiza_update(series[series_url])
+        elif series[series_url].find('vo-production') != -1:
+            last_series = vo_production_update(series[series_url])
+        elif series[series_url].find('anidub') != -1:
+            if series[series_state] != 'сезон просмотрен':
+                last_series = anidub_update(series[series_url])
+                if(last_series[1] == last_series[2]) and (last_series[1] == series[series_watched].split('\\')[1]):
+                    series[series_state] = 'сезон просмотрен'
+                    update_series_state(series)
+                last_series = last_series[:-1]
             else:
-                last_series = [0, 0]
-            if series[series_last] == '':
-                last_known_series = [0, 0]
-            else:
-                last_known_series = series[series_last].split('\\')
-            if not (int(last_series[0]) > int(last_known_series[0])):
-                if int(last_series[0]) == int(last_known_series[0]) and int(last_series[1]) > int(last_known_series[1]):
-                    series[series_last] = last_series[0] + '\\' + last_series[1]
-                    new_series.append(series)
-            else:
+                last_series = series[series_watched].split('\\')
+        else:
+            last_series = [0, 0]
+        if series[series_last] == '':
+            last_known_series = [0, 0]
+        else:
+            last_known_series = series[series_last].split('\\')
+        print(last_series, last_known_series)
+        if not (int(last_series[0]) > int(last_known_series[0])):
+            if int(last_series[0]) == int(last_known_series[0]) and int(last_series[1]) > int(last_known_series[1]):
                 series[series_last] = last_series[0] + '\\' + last_series[1]
-                new_series.append(series)
+                new_series = series
+        else:
+            series[series_last] = last_series[0] + '\\' + last_series[1]
+            new_series = series
+    return new_series
+
+
+def check_new_series_list(series_list):
+    new_series = []
+    temp = pool.map(check_new_series, series_list)
+    pool.close()
+    pool.join()
+    for series in temp:
+        if series:
+            new_series.append(series)
     return new_series
 
 
@@ -152,6 +167,6 @@ def anidub_update(url):
 
 def do_it():
     series_list = get_series_list()
-    new_series = check_new_series(series_list)
+    new_series = check_new_series_list(series_list)
     update_series_list(new_series)
 do_it()
